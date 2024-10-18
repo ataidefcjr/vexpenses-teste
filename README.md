@@ -55,8 +55,14 @@
     Modificação feita no user_data agora inclui a instalação automática do Nginx.
 
 
-## Justificativa das alterações
+### Justificativa das alterações  
+______
 - A restrição do acesso SSH a um único IP melhora a segurança, é possível configurar o IP da VPN da empresa.
 - As regras para tráfego de HTTP e HTTPS para correta utilização do Nginx.
 - A instalação automática do Nginx garante que o servidor web esteja pronto para uso imediatamente após a criação da instância.
 - O armazenamento dos logs pode ajudar a identificar problemas futuros.
+
+<br>
+
+# Instruções de Uso
+
