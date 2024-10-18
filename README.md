@@ -1,3 +1,8 @@
+## Introdução
+
+- O arquivo `main.tf` original foi renomeado para `main.old`
+- O arquivo com as melhorias adicionadas agora é o `main.tf`
+
 # Análise Técnica do Código Terraform
 
 1. Provedor AWS: Configura a região "us-east-1"
