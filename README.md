@@ -1,7 +1,4 @@
-
-
 # Análise Técnica do Código Terraform
-
 
 1. Provedor AWS: Configura a região "us-east-1"
 
@@ -26,12 +23,13 @@
 11. Busca a imagem do Debian 12 mais recente, no filtro name está restringido a busca para arquitetura amd64, o filtro virtualization-type restringe a imagens que usam HVM como tipo de virtualização
 
 12. Cria a instância
-   - Utiliza a AMI do Debian 12 que foi definida no passo anterior.
-   - Associada à subnet e ao grupo de segurança criados.
-   - Atribui um IP público.
-   - Configura um volume raiz de 20GB do tipo gp2.
-   - delete_on_termination serve para excluir o volume ao encerrar a instância
-   - Executa um script de inicialização para atualizar o sistema.
+
+- Utiliza a AMI do Debian 12 que foi definida no passo anterior.
+- Associada à subnet e ao grupo de segurança criados.
+- Atribui um IP público.
+- Configura um volume raiz de 20GB do tipo gp2.
+- delete_on_termination serve para excluir o volume ao encerrar a instância
+- Executa um script de inicialização para atualizar o sistema.
 
 13. Fornece a saída dos dados, a chave privada criada no item 3 e o endereço de IP para acesso ao SSH, a chave privada é marcada como sensivel para ocultação no terminal
 
@@ -40,23 +38,34 @@
 # Melhorias Implementadas
 
 ### 1. Grupo de Segurança
+
 - **Restringir o aceso ao SSH:** O acesso SSH (porta 22) foi limitado a um IP específico, o que ajuda a mitigar o risco de ataques de força bruta.
 
 - **Liberar o acesso ao HTTP e HTTPS:** Criei 2 novas regras para permitir o tráfego **HTTP** e **HTTPS**, nas portas 80 e 443, essenciais para o funcionamento do **Nginx**.
 
 ### 2. Armazenamento de Logs
+
 - **Logs:** Adicionei um bucket S3 para armazenar os logs com criptografia para segurança dos dados armazenados.
 
 ### 3. Instalação Automática do Nginx
-- **Comandos inseridos**:        
-    `apt-get install nginx`    
-    `systemctl enable nginx`    
-    `systemctl start nginx`     
-    Modificação feita no user_data agora inclui a instalação automática do Nginx.
 
+- **Comandos inseridos**:  
+   ```
+   apt-get install nginx 
+   systemctl enable nginx
+   systemctl start nginx
+   ```
+   Modificação feita no user_data agora inclui a instalação automática do Nginx.
 
-### Justificativa das alterações  
-______
+## Pequenas alterações
+
+- Foi criada a variável ip obrigatória, para permitir o ssh apenas ao ip informado.
+- Foi adicionado um timestamp ao final do nome do par da chave, para evitar problema de repetição de nome.
+- Retirado as tags no aws_route_table_association, pois estava gerando o erro "tags is not expected here"
+- Na aws_instance modifiquei para buscar o security group pelo id, pois ao fazer um apply estava obtendo erro quando estava usando o nome.
+
+## Justificativa das alterações
+
 - A restrição do acesso SSH a um único IP melhora a segurança, é possível configurar o IP da VPN da empresa.
 - As regras para tráfego de HTTP e HTTPS para correta utilização do Nginx.
 - A instalação automática do Nginx garante que o servidor web esteja pronto para uso imediatamente após a criação da instância.
@@ -66,3 +75,14 @@ ______
 
 # Instruções de Uso
 
+- Instale o Terraform de acordo com o link: https://www.terraform.io
+- Instale o AWS-CLI para autenticação, ou atualize o campo providers inserindo suas credenciais.
+- Clone este repositório com `git clone https://github.com/ataidefcjr/vexpenses-teste`
+- Navegue até o diretório contendo o arquivo `main.tf`
+- Execute os seguintes comandos:
+
+```
+terraform init
+terraform plan
+terraform apply
+```

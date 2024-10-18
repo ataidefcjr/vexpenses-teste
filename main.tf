@@ -1,29 +1,41 @@
+# Configura o AWS como provedor
 provider "aws" {
   region = "us-east-1"
 }
 
+# Variável para definir o nome do projeto
 variable "projeto" {
   description = "Nome do projeto"
   type        = string
   default     = "VExpenses"
 }
 
+# Variável para o nome do candidato
 variable "candidato" {
   description = "Nome do candidato"
   type        = string
   default     = "SeuNome"
 }
 
+# Criação da variável IP, para permitir acesso ao SSH apenas ao IP informado, aumentando a segurança
+variable "ip" {
+  description = "IP para acesso ao SSH"
+  type        = string
+}
+
+# Criação de uma chave privada RSA
 resource "tls_private_key" "ec2_key" {
   algorithm = "RSA"
   rsa_bits  = 2048
 }
 
+# Criação de um par de chaves AWS usando a chave pública gerada
 resource "aws_key_pair" "ec2_key_pair" {
-  key_name   = "${var.projeto}-${var.candidato}-key"
+  key_name   = "${var.projeto}-${var.candidato}-key-${timestamp()}" #Acrescentei um timestamp após o key.
   public_key = tls_private_key.ec2_key.public_key_openssh
 }
 
+# Criação de uma VPC (Virtual Private Cloud)
 resource "aws_vpc" "main_vpc" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_support   = true
@@ -34,6 +46,7 @@ resource "aws_vpc" "main_vpc" {
   }
 }
 
+# Criação de uma subnet pública dentro da VPC
 resource "aws_subnet" "main_subnet" {
   vpc_id            = aws_vpc.main_vpc.id
   cidr_block        = "10.0.1.0/24"
@@ -44,6 +57,7 @@ resource "aws_subnet" "main_subnet" {
   }
 }
 
+# Criação de um Internet Gateway para permitir acesso à internet
 resource "aws_internet_gateway" "main_igw" {
   vpc_id = aws_vpc.main_vpc.id
 
@@ -52,6 +66,7 @@ resource "aws_internet_gateway" "main_igw" {
   }
 }
 
+# Criação de uma tabela de roteamento para a VPC
 resource "aws_route_table" "main_route_table" {
   vpc_id = aws_vpc.main_vpc.id
 
@@ -65,31 +80,51 @@ resource "aws_route_table" "main_route_table" {
   }
 }
 
+# Associação da subnet com a tabela de roteamento
 resource "aws_route_table_association" "main_association" {
   subnet_id      = aws_subnet.main_subnet.id
   route_table_id = aws_route_table.main_route_table.id
 
-  tags = {
-    Name = "${var.projeto}-${var.candidato}-route_table_association"
-  }
+  #Retirado a tag pois estava apresentando erro: "tags is not expected here"
+  #tags = {
+  #  Name = "${var.projeto}-${var.candidato}-route_table_association"
+  #}
 }
 
+# Criação de um grupo de segurança para controlar o tráfego de rede
 resource "aws_security_group" "main_sg" {
   name        = "${var.projeto}-${var.candidato}-sg"
-  description = "Permitir SSH de qualquer lugar e todo o tráfego de saída"
+  description = "Permitir SSH do IP informado, HTTP e HTTPS"
   vpc_id      = aws_vpc.main_vpc.id
 
-  # Regras de entrada
+  # Regras de entrada para permitir SSH do IP informado.
   ingress {
-    description      = "Allow SSH from anywhere"
+    description      = "Allow SSH"
     from_port        = 22
     to_port          = 22
     protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
+    cidr_blocks      = ["${var.ip}/32"]
   }
 
-  # Regras de saída
+  #Criado regra para permitir o tráfego HTTP
+  ingress {
+    description      = "Allow HTTP traffic"
+    from_port        = 80
+    to_port          = 80
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]  
+  }
+  
+  #Criado regra para permitir trafego HTTPS
+  ingress {
+    description      = "Allow HTTPS traffic"
+    from_port        = 443
+    to_port          = 443
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]  # Permitir de qualquer IP
+  }
+
+  # Regra de saída para permitir o tráfego para qualquer destino
   egress {
     description      = "Allow all outbound traffic"
     from_port        = 0
@@ -104,6 +139,7 @@ resource "aws_security_group" "main_sg" {
   }
 }
 
+# Busca da AMI mais recente do Debian 12
 data "aws_ami" "debian12" {
   most_recent = true
 
@@ -120,25 +156,31 @@ data "aws_ami" "debian12" {
   owners = ["679593333241"]
 }
 
+# Criação de uma instância EC2
 resource "aws_instance" "debian_ec2" {
   ami             = data.aws_ami.debian12.id
   instance_type   = "t2.micro"
   subnet_id       = aws_subnet.main_subnet.id
   key_name        = aws_key_pair.ec2_key_pair.key_name
-  security_groups = [aws_security_group.main_sg.name]
+  vpc_security_group_ids = [aws_security_group.main_sg.id]  # alterei para id
 
   associate_public_ip_address = true
 
+  # Configuração do volume raiz
   root_block_device {
     volume_size           = 20
     volume_type           = "gp2"
     delete_on_termination = true
   }
 
+  # Inseri os comandos para instalar, ativar e iniciar o nginx
   user_data = <<-EOF
               #!/bin/bash
               apt-get update -y
               apt-get upgrade -y
+              apt-get install nginx
+              systemctl enable nginx
+              systemctl start nginx
               EOF
 
   tags = {
@@ -146,12 +188,14 @@ resource "aws_instance" "debian_ec2" {
   }
 }
 
+# Output para a chave privada
 output "private_key" {
   description = "Chave privada para acessar a instância EC2"
   value       = tls_private_key.ec2_key.private_key_pem
   sensitive   = true
 }
 
+# Output para o IP público da instância EC2
 output "ec2_public_ip" {
   description = "Endereço IP público da instância EC2"
   value       = aws_instance.debian_ec2.public_ip
