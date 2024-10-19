@@ -99,29 +99,29 @@ resource "aws_security_group" "main_sg" {
 
   # Regras de entrada para permitir SSH do IP informado.
   ingress {
-    description      = "Allow SSH"
-    from_port        = 22
-    to_port          = 22
-    protocol         = "tcp"
-    cidr_blocks      = ["${var.ip}/32"]
+    description = "Allow SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["${var.ip}/32"]
   }
 
   #Criado regra para permitir o tráfego HTTP
   ingress {
-    description      = "Allow HTTP traffic"
-    from_port        = 80
-    to_port          = 80
-    protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]  
+    description = "Allow HTTP traffic"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
-  
+
   #Criado regra para permitir trafego HTTPS
   ingress {
-    description      = "Allow HTTPS traffic"
-    from_port        = 443
-    to_port          = 443
-    protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]  # Permitir de qualquer IP
+    description = "Allow HTTPS traffic"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Permitir de qualquer IP
   }
 
   # Regra de saída para permitir o tráfego para qualquer destino
@@ -158,11 +158,11 @@ data "aws_ami" "debian12" {
 
 # Criação de uma instância EC2
 resource "aws_instance" "debian_ec2" {
-  ami             = data.aws_ami.debian12.id
-  instance_type   = "t2.micro"
-  subnet_id       = aws_subnet.main_subnet.id
-  key_name        = aws_key_pair.ec2_key_pair.key_name
-  vpc_security_group_ids = [aws_security_group.main_sg.id]  # alterei para id
+  ami                    = data.aws_ami.debian12.id
+  instance_type          = "t2.micro"
+  subnet_id              = aws_subnet.main_subnet.id
+  key_name               = aws_key_pair.ec2_key_pair.key_name
+  vpc_security_group_ids = [aws_security_group.main_sg.id] # alterei para id
 
   associate_public_ip_address = true
 
@@ -171,6 +171,7 @@ resource "aws_instance" "debian_ec2" {
     volume_size           = 20
     volume_type           = "gp2"
     delete_on_termination = true
+    encrypted             = true
   }
 
   # Inseri os comandos para instalar e iniciar o nginx
