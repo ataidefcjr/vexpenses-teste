@@ -2,7 +2,6 @@
 
 - O arquivo `main.tf` original foi renomeado para `main.old`
 - O arquivo com as melhorias adicionadas agora é o `main.tf`
- 
 
 # Análise Técnica do Código Terraform
 
@@ -45,32 +44,31 @@
 
 ### 1. Grupo de Segurança
 
-- **Restringir o aceso ao SSH:** O acesso SSH (porta 22) foi limitado a um IP específico, o que ajuda a mitigar o risco de ataques de força bruta.
+- **Restringir o aceso ao SSH:** O acesso SSH (porta 22) foi limitado a um IP específico, para isso criei uma varíavel "ip" obrigatória. A restrição do acesso SSH a um único IP melhora a segurança pois teremos um controle de acesso restrito.
 
 - **Liberar o acesso ao HTTP e HTTPS:** Criei 2 novas regras para permitir o tráfego **HTTP** e **HTTPS**, (portas 80 e 443) essenciais para o funcionamento do **Nginx**.
 
-### 2. Instalação Automática do Nginx
+### 2. Criptografia do Disco
 
-- **Comandos inseridos**:  
-   ```
-   apt-get install nginx 
-   systemctl enable nginx
-   systemctl start nginx
-   ```
-   Modificação feita no user_data agora inclui a instalação automática do Nginx.
+- Com `encrypted = true` em root_block_device, ativamos a criptografia do disco, o que aumenta ainda mais a segurança.
 
-## Pequenas alterações
+### 3. Instalação Automática do Nginx
 
-- Foi criada a variável ip obrigatória, para permitir o ssh apenas ao ip informado.
+- **Comandos inseridos**:
+  ```
+  apt-get install nginx
+  systemctl enable nginx
+  systemctl start nginx
+  ```
+  Modificação feita no user_data agora inclui a instalação automática do Nginx.
+
+## Alterações
+
 - Retirado as tags no aws_route_table_association, pois estava gerando o erro "tags is not expected here"
+
 - Na aws_instance modifiquei para buscar o security group pelo id, pois ao fazer um apply estava obtendo erro quando estava usando o nome.
-- Em user data coloquei todos os comandos com sudo para evitar erros. 
 
-## Justificativa das alterações
-
-- A restrição do acesso SSH a um único IP melhora a segurança, fornece um controle de acesso restrito.
-- As regras para tráfego de HTTP e HTTPS para correta utilização do Nginx.
-- A instalação automática do Nginx garante que o servidor web esteja pronto para uso imediatamente após a criação da instância.
+- Em user data coloquei todos os comandos com sudo para evitar erros.
 
 <br>
 
@@ -87,6 +85,7 @@ terraform init
 terraform plan
 terraform apply -var "ip=0.0.0.0"
 ```
+
 - Subsitua o 0.0.0.0 pelo seu IP
 - Anote o IP gerado do EC2 e o acesse a partir de um browser para confirmar que está funcional.
 - Para salvar a chave privada de acesso ao SSH: `terraform output private_key > terraform_pkey.pem && chmod 400 terraform_pkey.pem`
