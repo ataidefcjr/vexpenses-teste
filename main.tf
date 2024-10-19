@@ -14,7 +14,7 @@ variable "projeto" {
 variable "candidato" {
   description = "Nome do candidato"
   type        = string
-  default     = "SeuNome"
+  default     = "Ataide Freitas"
 }
 
 # Criação da variável IP, para permitir acesso ao SSH apenas ao IP informado, aumentando a segurança
@@ -31,7 +31,7 @@ resource "tls_private_key" "ec2_key" {
 
 # Criação de um par de chaves AWS usando a chave pública gerada
 resource "aws_key_pair" "ec2_key_pair" {
-  key_name   = "${var.projeto}-${var.candidato}-key-${timestamp()}" #Acrescentei um timestamp após o key.
+  key_name   = "${var.projeto}-${var.candidato}-key"
   public_key = tls_private_key.ec2_key.public_key_openssh
 }
 
@@ -173,12 +173,12 @@ resource "aws_instance" "debian_ec2" {
     delete_on_termination = true
   }
 
-  # Inseri os comandos para instalar, ativar e iniciar o nginx
+  # Inseri os comandos para instalar e iniciar o nginx
   user_data = <<-EOF
               #!/bin/bash
-              apt-get update -y
-              apt-get upgrade -y
-              apt-get install nginx
+              sudo apt-get update -y
+              sudo apt-get upgrade -y
+              sudo apt-get install -y nginx
               systemctl enable nginx
               systemctl start nginx
               EOF

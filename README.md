@@ -2,6 +2,7 @@
 
 - O arquivo `main.tf` original foi renomeado para `main.old`
 - O arquivo com as melhorias adicionadas agora é o `main.tf`
+ 
 
 # Análise Técnica do Código Terraform
 
@@ -9,7 +10,7 @@
 
 2. Variáveis: Define duas variáveis, "projeto" e "candidato" que serão utilizadas para nomear os recursos de forma dinâmica
 
-3. Gera uma chave privada RSA usando o algorítmo RSA de 2048 bits que será utilizada no proximo passo e impressa ao final do código para autenticação no SSH
+3. Gera uma chave privada RSA usando o algorítmo RSA de 2048 bits que será utilizada no proximo passo, é com ela que fazemos a autenticação no SSH
 
 4. Cria um par de chaves AWS utilizando uma chave pública derivada da chave privada gerada anteriormente, esse par de chaves é essencial para segurança da autencicação
 
@@ -46,13 +47,9 @@
 
 - **Restringir o aceso ao SSH:** O acesso SSH (porta 22) foi limitado a um IP específico, o que ajuda a mitigar o risco de ataques de força bruta.
 
-- **Liberar o acesso ao HTTP e HTTPS:** Criei 2 novas regras para permitir o tráfego **HTTP** e **HTTPS**, nas portas 80 e 443, essenciais para o funcionamento do **Nginx**.
+- **Liberar o acesso ao HTTP e HTTPS:** Criei 2 novas regras para permitir o tráfego **HTTP** e **HTTPS**, (portas 80 e 443) essenciais para o funcionamento do **Nginx**.
 
-### 2. Armazenamento de Logs
-
-- **Logs:** Adicionei um bucket S3 para armazenar os logs com criptografia para segurança dos dados armazenados.
-
-### 3. Instalação Automática do Nginx
+### 2. Instalação Automática do Nginx
 
 - **Comandos inseridos**:  
    ```
@@ -65,29 +62,32 @@
 ## Pequenas alterações
 
 - Foi criada a variável ip obrigatória, para permitir o ssh apenas ao ip informado.
-- Foi adicionado um timestamp ao final do nome do par da chave, para evitar problema de repetição de nome.
 - Retirado as tags no aws_route_table_association, pois estava gerando o erro "tags is not expected here"
 - Na aws_instance modifiquei para buscar o security group pelo id, pois ao fazer um apply estava obtendo erro quando estava usando o nome.
+- Em user data coloquei todos os comandos com sudo para evitar erros. 
 
 ## Justificativa das alterações
 
-- A restrição do acesso SSH a um único IP melhora a segurança, é possível configurar o IP da VPN da empresa.
+- A restrição do acesso SSH a um único IP melhora a segurança, fornece um controle de acesso restrito.
 - As regras para tráfego de HTTP e HTTPS para correta utilização do Nginx.
 - A instalação automática do Nginx garante que o servidor web esteja pronto para uso imediatamente após a criação da instância.
-- O armazenamento dos logs pode ajudar a identificar problemas futuros.
 
 <br>
 
 # Instruções de Uso
 
-- Instale o Terraform de acordo com o link: https://www.terraform.io
-- Instale o AWS-CLI para autenticação, ou atualize o campo providers inserindo suas credenciais.
 - Clone este repositório com `git clone https://github.com/ataidefcjr/vexpenses-teste`
+- Instale o Terraform de acordo com o link: `https://www.terraform.io`
+- Instale o AWS-CLI para autenticação, ou atualize o campo providers em `main.tf` inserindo suas credenciais AWS.
 - Navegue até o diretório contendo o arquivo `main.tf`
 - Execute os seguintes comandos:
 
 ```
 terraform init
 terraform plan
-terraform apply
+terraform apply -var "ip=0.0.0.0"
 ```
+- Subsitua o 0.0.0.0 pelo seu IP
+- Anote o IP gerado do EC2 e o acesse a partir de um browser para confirmar que está funcional.
+- Para salvar a chave privada de acesso ao SSH: `terraform output private_key > terraform_pkey.pem && chmod 400 terraform_pkey.pem`
+- Acesse o SSH com: `ssh -i terraform_pkey.pem admin@[IP FORNECIDO NO FINAL DO APPLY]`
