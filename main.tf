@@ -46,7 +46,7 @@ resource "aws_vpc" "main_vpc" {
   }
 }
 
-# Criação de uma subnet pública dentro da VPC
+# Criação de uma subnet dentro da VPC
 resource "aws_subnet" "main_subnet" {
   vpc_id            = aws_vpc.main_vpc.id
   cidr_block        = "10.0.1.0/24"
@@ -121,7 +121,7 @@ resource "aws_security_group" "main_sg" {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Permitir de qualquer IP
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   # Regra de saída para permitir o tráfego para qualquer destino
@@ -177,9 +177,9 @@ resource "aws_instance" "debian_ec2" {
   # Inseri os comandos para instalar e iniciar o nginx
   user_data = <<-EOF
               #!/bin/bash
-              sudo apt-get update -y
-              sudo apt-get upgrade -y
-              sudo apt-get install -y nginx
+              apt-get update -y
+              apt-get upgrade -y
+              apt-get install -y nginx
               systemctl enable nginx
               systemctl start nginx
               EOF
